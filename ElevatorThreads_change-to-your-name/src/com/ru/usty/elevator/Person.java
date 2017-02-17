@@ -13,8 +13,11 @@ public class Person implements Runnable{
 	public void run() {
 		try {
 			
-			ElevatorScene.semaphore1.acquire(); //wait
-		
+			ElevatorScene.elevatorWaitMutex.acquire();
+			
+				ElevatorScene.semaphore1.acquire(); //wait
+			
+			ElevatorScene.elevatorWaitMutex.release();
 		} catch (InterruptedException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

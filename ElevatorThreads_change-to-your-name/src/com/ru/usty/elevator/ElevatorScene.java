@@ -15,6 +15,10 @@ public class ElevatorScene {
 	
 	public static Semaphore semaphore1;
 	
+	public static Semaphore personCountMutex;
+	
+	public static Semaphore elevatorWaitMutex;
+	
 	public static ElevatorScene scene;
 	
 
@@ -37,7 +41,10 @@ public class ElevatorScene {
 	public void restartScene(int numberOfFloors, int numberOfElevators) {
 		
 		scene = this;
-		semaphore1 = new Semaphore(0);
+		semaphore1 = new Semaphore(0); //kemst enginn inn fyrr en búið er að signala
+		personCountMutex = new Semaphore(1); //fyrsti sem kemur inn má koma inn en setur hana niður í 0, ekki fyrr en hann fer út og signalar þá fer hún í 1 
+		elevatorWaitMutex = new Semaphore(1);
+		
 		
 		new Thread(new Runnable() {
 			
@@ -129,8 +136,15 @@ public class ElevatorScene {
 	}
 	
 	public void decrementNumberOfPeopleWaitingAtFloor(int floor) {
-		personCount.set(floor, (personCount.get(floor) - 1));
-		
+		try {
+			personCountMutex.acquire(); //verður hérna 0
+				personCount.set(floor, (personCount.get(floor) - 1));
+			personCountMutex.release(); //verður hérna 1
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	
 	}
 
 	//Base function: definition must not change, but add your code if needed

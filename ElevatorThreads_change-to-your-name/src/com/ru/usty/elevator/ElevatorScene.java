@@ -24,17 +24,22 @@ public class ElevatorScene {
 
 	//TO SPEED THINGS UP WHEN TESTING,
 	//feel free to change this.  It will be changed during grading
-	public static final int VISUALIZATION_WAIT_TIME = 500;  //milliseconds
+	public static final int VISUALIZATION_WAIT_TIME = 50;  //milliseconds
 
 	private int numberOfFloors;
 	private int numberOfElevators;
+	public int elevatorStartFloor; //Setting default floor of beginning of scene
+	public int currentElevatorFloor; //Current floor of the elevator.
 
 	ArrayList<Integer> personCount; //use if you want but
 									//throw away and
 									//implement differently
 									//if it suits you
 	ArrayList<Integer> exitedCount = null;
+	public int peopleInElevatorCount;
 	public static Semaphore exitedCountMutex;
+	public static Semaphore peopleInElevator;
+	public static Semaphore peopleInElevatorMutex;
 
 	//Base function: definition must not change
 	//Necessary to add your code in this one
@@ -44,12 +49,18 @@ public class ElevatorScene {
 		semaphore1 = new Semaphore(0); //kemst enginn inn fyrr en b√∫i√∞ er a√∞ signala
 		personCountMutex = new Semaphore(1); //fyrsti sem kemur inn m√° koma inn en setur hana ni√∞ur √≠ 0, ekki fyrr en hann fer √∫t og signalar √æ√° fer h√∫n √≠ 1 
 		elevatorWaitMutex = new Semaphore(1);
+		peopleInElevator = new Semaphore(6);
+		peopleInElevatorMutex = new Semaphore(1);
+		peopleInElevatorCount = 0;
+		elevatorStartFloor = 0;
+		currentElevatorFloor = 0;
 		
 		
 		new Thread(new Runnable() {
 			
 			@Override
 			public void run() {
+				System.out.println("New Thread");
 				for(int i = 0; i < 16; i++) {
 					ElevatorScene.semaphore1.release(); //sama og signal
 				}
@@ -70,6 +81,9 @@ public class ElevatorScene {
 
 		this.numberOfFloors = numberOfFloors;
 		this.numberOfElevators = numberOfElevators;
+		Elevator elevator = new Elevator(0, this);
+		Thread thread = new Thread(elevator);
+		thread.start();
 
 		personCount = new ArrayList<Integer>();
 		for(int i = 0; i < numberOfFloors; i++) {
@@ -91,7 +105,7 @@ public class ElevatorScene {
 	//Base function: definition must not change
 	//Necessary to add your code in this one
 	public Thread addPerson(int sourceFloor, int destinationFloor) {
-		
+		//System.out.println("Function addPerson");
 		
 		Thread thread = new Thread(new Person(sourceFloor, destinationFloor));
 		thread.start();
@@ -110,32 +124,66 @@ public class ElevatorScene {
 		personCount.set(sourceFloor, personCount.get(sourceFloor) + 1);
 		return thread;  //this means that the testSuite will not wait for the threads to finish
 	}
+	
+	public void addPersonToElevator(Semaphore count, Semaphore mutex) throws InterruptedException{
+		int numOfPeopleInElevator = count.availablePermits();
+		int mutexLock = mutex.availablePermits();
+		
+		while(numOfPeopleInElevator != 0){
+			try{
+				this.peopleInElevator.acquire();
+				this.decrementNumberOfPeopleWaitingAtFloor(0);
+				this.peopleInElevatorCount++;
+				System.out.println("Number of people: " + this.peopleInElevator.availablePermits());
+				this.elevatorMove(1);
+			}
+			catch(InterruptedException e){
+				e.printStackTrace();
+			}
+		}
+		
+		this.decrementPeopleFromElevator(this.peopleInElevator, this.peopleInElevatorMutex);
+	}
+	
+	public void decrementPeopleFromElevator(Semaphore count, Semaphore mutex){
+		
+		System.out.println("Reka fÛlk ˙t fall");
+		int numOfPeopleInElevator = count.availablePermits();
+		int mutexLock = mutex.availablePermits();
+		
+		this.peopleInElevatorCount -=6;
+		this.peopleInElevator.release(6);
+		
+		/*
+		while(numOfPeopleInElevator != 0 ){
+			this.peopleInElevator.release();
+			this.peopleInElevatorCount --;
+		}*/
+	}
 
 	//Base function: definition must not change, but add your code
 	public int getCurrentFloorForElevator(int elevator) {
-
+		//System.out.println("Function gerCurrentFloorForElevator");
 		//dumb code, replace it!
-		return 1;
+		return this.currentElevatorFloor;
 	}
 
 	//Base function: definition must not change, but add your code
 	public int getNumberOfPeopleInElevator(int elevator) {
-		
+		//System.out.println("Function getNumberOfPeopleInElevator");
 		//dumb code, replace it!
-		switch(elevator) {
-		case 1: return 1;
-		case 2: return 4;
-		default: return 3;
-		}
+		return this.peopleInElevatorCount;
 	}
 
 	//Base function: definition must not change, but add your code
 	public int getNumberOfPeopleWaitingAtFloor(int floor) {
-
+		//System.out.println("Function getNumberOfPeopleWaitingAtFloor");
+		
 		return personCount.get(floor);
 	}
 	
 	public void decrementNumberOfPeopleWaitingAtFloor(int floor) {
+		//System.out.println("Function decrementNumberOfPeopleWaitingAtFloor");
 		try {
 			personCountMutex.acquire(); //ver√∞ur h√©rna 0
 				personCount.set(floor, (personCount.get(floor) - 1));
@@ -149,21 +197,25 @@ public class ElevatorScene {
 
 	//Base function: definition must not change, but add your code if needed
 	public int getNumberOfFloors() {
+		//System.out.println("Function getNumberOfFloors");
 		return numberOfFloors;
 	}
 
 	//Base function: definition must not change, but add your code if needed
 	public void setNumberOfFloors(int numberOfFloors) {
+		//System.out.println("Function setNumbersOfFloors");
 		this.numberOfFloors = numberOfFloors;
 	}
 
 	//Base function: definition must not change, but add your code if needed
 	public int getNumberOfElevators() {
+		//System.out.println("Function getNumberOfElevators");
 		return numberOfElevators;
 	}
 
 	//Base function: definition must not change, but add your code if needed
 	public void setNumberOfElevators(int numberOfElevators) {
+		//System.out.println("Function setNumberOfElevators");
 		this.numberOfElevators = numberOfElevators;
 	}
 
@@ -171,13 +223,13 @@ public class ElevatorScene {
 	//				 not to "open the doors" sometimes
 	//				 even though there are people there
 	public boolean isElevatorOpen(int elevator) {
-
+		//System.out.println("Function isElevatorOpen");
 		return isButtonPushedAtFloor(getCurrentFloorForElevator(elevator));
 	}
 	//Base function: no need to change, just for visualization
 	//Feel free to use it though, if it helps
 	public boolean isButtonPushedAtFloor(int floor) {
-
+		//System.out.println("Function isButtonPushedAtFloor");
 		return (getNumberOfPeopleWaitingAtFloor(floor) > 0);
 	}
 
@@ -186,6 +238,7 @@ public class ElevatorScene {
 	//Person calls it after being let off elevator
 	//but before it finishes its run.
 	public void personExitsAtFloor(int floor) {
+		//System.out.println("Function PersonExitsAtFloor");
 		try {
 			
 			exitedCountMutex.acquire();
@@ -201,12 +254,24 @@ public class ElevatorScene {
 	//Base function: no need to change, just for visualization
 	//Feel free to use it though, if it helps
 	public int getExitedCountAtFloor(int floor) {
+		//System.out.println("Function getExitedCountAtFloor");
 		if(floor < getNumberOfFloors()) {
 			return exitedCount.get(floor);
 		}
 		else {
 			return 0;
 		}
+	}
+	
+	//Function to send elevator between floor 0 and 1
+	public void elevatorMove(int x){
+		//ToDo setja inn bool skilyri, passa a lyfta fari ekki niur fyrir 0 og upp fyrir efstuhÊ + setja inn mutex
+		boolean bool = true;
+		System.out.println("Move this fucking elevator!");
+		if(this.peopleInElevatorCount == 6){
+			this.currentElevatorFloor = 1;
+		}
+		
 	}
 
 

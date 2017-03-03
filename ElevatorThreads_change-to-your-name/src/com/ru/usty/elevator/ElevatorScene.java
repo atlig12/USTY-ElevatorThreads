@@ -13,7 +13,7 @@ import java.util.concurrent.Semaphore;
 
 public class ElevatorScene {
 	
-	public static Semaphore semaphore1;
+	public static Semaphore enterElevator;
 	
 	public static Semaphore personCountMutex;
 	
@@ -24,13 +24,14 @@ public class ElevatorScene {
 
 	//TO SPEED THINGS UP WHEN TESTING,
 	//feel free to change this.  It will be changed during grading
-	public static final int VISUALIZATION_WAIT_TIME = 1000;  //milliseconds
+	public static final int VISUALIZATION_WAIT_TIME = 500;  //milliseconds
 
 	private int numberOfFloors;
 	private int numberOfElevators;
 	public int elevatorStartFloor; //Setting default floor of beginning of scene
 	public int currentElevatorFloor; //Current floor of the elevator.
-
+	
+	
 	ArrayList<Integer> personCount; //use if you want but
 									//throw away and
 									//implement differently
@@ -46,7 +47,7 @@ public class ElevatorScene {
 	public void restartScene(int numberOfFloors, int numberOfElevators) {
 		
 		scene = this;
-		semaphore1 = new Semaphore(0); //kemst enginn inn fyrr en búið er að signala
+		enterElevator = new Semaphore(0); //kemst enginn inn fyrr en búið er að signala
 		personCountMutex = new Semaphore(1); //fyrsti sem kemur inn má koma inn en setur hana niður í 0, ekki fyrr en hann fer út og signalar þá fer hún í 1 
 		elevatorWaitMutex = new Semaphore(1);
 	
@@ -55,18 +56,23 @@ public class ElevatorScene {
 		elevatorStartFloor = 0;
 		currentElevatorFloor = 0;
 		
+		Elevator elevator = new Elevator(0, this);
+		Thread thread = new Thread(elevator);
+		thread.start();
 		
+		System.out.println("Lyfta startar me� " + enterElevator.availablePermits() + " Laus pl�s");
+		
+		/*
 		new Thread(new Runnable() {
 			
 			@Override
 			public void run() {
+				Elevator.this.
 				System.out.println("New Thread");
-				for(int i = 0; i < 6; i++) {
-					ElevatorScene.semaphore1.release(); //sama og signal
-				}
+				
 			}
 		}).start();
-
+*/
 		/**
 		 * Important to add code here to make new
 		 * threads that run your elevator-runnables
@@ -81,9 +87,7 @@ public class ElevatorScene {
 
 		this.numberOfFloors = numberOfFloors;
 		this.numberOfElevators = numberOfElevators;
-		Elevator elevator = new Elevator(0, this);
-		Thread thread = new Thread(elevator);
-		thread.start();
+		
 
 		personCount = new ArrayList<Integer>();
 		for(int i = 0; i < numberOfFloors; i++) {
@@ -126,16 +130,19 @@ public class ElevatorScene {
 	}
 	
 	public void addPersonToElevator() throws InterruptedException{
-		
 			try{
+				
 				this.peopleInElevatorMutex.acquire();
 				Thread.sleep(ElevatorScene.VISUALIZATION_WAIT_TIME);
 				this.peopleInElevatorCount ++;
-				this.peopleInElevatorMutex.release();		
+				this.peopleInElevatorMutex.release();	
+				
+				
 			}
 			catch(InterruptedException e){
 				e.printStackTrace();
 			}
+		
 		System.out.println(this.peopleInElevatorCount + " Counterinn okkar");
 		
 	}
@@ -272,13 +279,11 @@ public class ElevatorScene {
 	}
 	
 	//Function to send elevator between floor 0 and 1
-	public void elevatorMove(int x){
+	public void elevatorMove(){
 		//ToDo setja inn bool skilyr�i, passa a� lyfta fari ekki ni�ur fyrir 0 og upp fyrir efstuh�� + setja inn mutex
-		boolean bool = true;
+		
 		System.out.println("Move this fucking elevator!");
-		if(this.peopleInElevatorCount == 6){
-			this.currentElevatorFloor = 1;
-		}
+		this.currentElevatorFloor = 1;
 		
 	}
 

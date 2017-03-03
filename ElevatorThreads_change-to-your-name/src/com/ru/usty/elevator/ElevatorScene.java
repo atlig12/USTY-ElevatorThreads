@@ -24,7 +24,7 @@ public class ElevatorScene {
 
 	//TO SPEED THINGS UP WHEN TESTING,
 	//feel free to change this.  It will be changed during grading
-	public static final int VISUALIZATION_WAIT_TIME = 50;  //milliseconds
+	public static final int VISUALIZATION_WAIT_TIME = 1000;  //milliseconds
 
 	private int numberOfFloors;
 	private int numberOfElevators;
@@ -49,7 +49,7 @@ public class ElevatorScene {
 		semaphore1 = new Semaphore(0); //kemst enginn inn fyrr en búið er að signala
 		personCountMutex = new Semaphore(1); //fyrsti sem kemur inn má koma inn en setur hana niður í 0, ekki fyrr en hann fer út og signalar þá fer hún í 1 
 		elevatorWaitMutex = new Semaphore(1);
-		peopleInElevator = new Semaphore(6);
+	
 		peopleInElevatorMutex = new Semaphore(1);
 		peopleInElevatorCount = 0;
 		elevatorStartFloor = 0;
@@ -61,7 +61,7 @@ public class ElevatorScene {
 			@Override
 			public void run() {
 				System.out.println("New Thread");
-				for(int i = 0; i < 16; i++) {
+				for(int i = 0; i < 6; i++) {
 					ElevatorScene.semaphore1.release(); //sama og signal
 				}
 			}
@@ -125,41 +125,49 @@ public class ElevatorScene {
 		return thread;  //this means that the testSuite will not wait for the threads to finish
 	}
 	
-	public void addPersonToElevator(Semaphore count, Semaphore mutex) throws InterruptedException{
-		int numOfPeopleInElevator = count.availablePermits();
-		int mutexLock = mutex.availablePermits();
+	public void addPersonToElevator() throws InterruptedException{
 		
-		while(numOfPeopleInElevator != 0){
 			try{
-				this.peopleInElevator.acquire();
-				this.decrementNumberOfPeopleWaitingAtFloor(0);
-				this.peopleInElevatorCount++;
-				System.out.println("Number of people: " + this.peopleInElevator.availablePermits());
-				this.elevatorMove(1);
+				this.peopleInElevatorMutex.acquire();
+				Thread.sleep(ElevatorScene.VISUALIZATION_WAIT_TIME);
+				this.peopleInElevatorCount ++;
+				this.peopleInElevatorMutex.release();		
 			}
 			catch(InterruptedException e){
 				e.printStackTrace();
 			}
-		}
+		System.out.println(this.peopleInElevatorCount + " Counterinn okkar");
 		
-		this.decrementPeopleFromElevator(this.peopleInElevator, this.peopleInElevatorMutex);
 	}
 	
-	public void decrementPeopleFromElevator(Semaphore count, Semaphore mutex){
+	public void decrementPeopleFromElevator(){
 		
-		System.out.println("Reka f�lk �t fall");
-		int numOfPeopleInElevator = count.availablePermits();
-		int mutexLock = mutex.availablePermits();
-		
-		this.peopleInElevatorCount -=6;
-		this.peopleInElevator.release(6);
-		
-		/*
-		while(numOfPeopleInElevator != 0 ){
-			this.peopleInElevator.release();
+		try{
+			
+			this.peopleInElevatorMutex.acquire();
+			Thread.sleep(ElevatorScene.VISUALIZATION_WAIT_TIME);
 			this.peopleInElevatorCount --;
-		}*/
+			this.peopleInElevatorMutex.release();		
+			
+		}
+		catch(InterruptedException e){
+			e.printStackTrace();
+		}
+	System.out.println(this.peopleInElevatorCount + " Counterinn okkar");
 	}
+		
+	public void incrementNumberOfPersonsWaitingAtFloor(int floor){
+			
+			try {
+				ElevatorScene.personCountMutex.acquire();
+					ElevatorScene.scene.personCount.set(floor, (personCount.get(floor) + 1));
+				ElevatorScene.personCountMutex.release();
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			
+		}
 
 	//Base function: definition must not change, but add your code
 	public int getCurrentFloorForElevator(int elevator) {

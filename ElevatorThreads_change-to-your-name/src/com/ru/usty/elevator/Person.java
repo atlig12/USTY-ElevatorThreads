@@ -25,7 +25,8 @@ public class Person implements Runnable{
 		}
 		
 		ElevatorScene.scene.decrementNumberOfPeopleWaitingAtFloor(sourceFloor);
-		ElevatorScene.scene.decrementPeopleFromElevator(ElevatorScene.peopleInElevator, ElevatorScene.peopleInElevatorMutex);
+		ElevatorScene.scene.decrementPeopleFromElevator();
+		ElevatorScene.scene.incrementNumberOfPersonsWaitingAtFloor(destinationFloor);
 		//System.out.println("Person Thread released");
 	}
 	

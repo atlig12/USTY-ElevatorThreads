@@ -21,7 +21,7 @@ public class Elevator implements Runnable {
 		for(int num = 0; num < 6; num++){
 			try {
 				System.out.println("Adding a fucking person to elevator");
-				this.scene.addPersonToElevator(ElevatorScene.peopleInElevator, ElevatorScene.peopleInElevatorMutex);
+				this.scene.addPersonToElevator();
 				
 			} catch (InterruptedException e) {
 				// TODO Auto-generated catch block

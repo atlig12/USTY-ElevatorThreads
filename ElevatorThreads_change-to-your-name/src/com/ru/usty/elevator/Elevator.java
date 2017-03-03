@@ -17,11 +17,14 @@ public class Elevator implements Runnable {
 	
 	@Override
 	public void run() {
-		int x = ElevatorScene.scene.enterElevator.availablePermits();
+		
+		//ElevatorScene.scene.elevatorMove();	
+		
+		/*int x = ElevatorScene.scene.enterElevator.availablePermits();
 		System.out.println(x + "counter i move elevator");
 		while(true){
 			
-				if(x == 0){
+				if(x == 6){
 					try {
 						ElevatorScene.elevatorWaitMutex.acquire();
 						ElevatorScene.scene.elevatorMove();	
@@ -35,7 +38,7 @@ public class Elevator implements Runnable {
 					
 					
 				}
-		}
+		}*/
 		
 		
 		

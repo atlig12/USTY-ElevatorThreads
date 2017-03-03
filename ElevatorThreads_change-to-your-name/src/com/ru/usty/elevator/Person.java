@@ -19,6 +19,10 @@ public class Person implements Runnable{
 			ElevatorScene.scene.addPersonToElevator();
 			ElevatorScene.elevatorWaitMutex.release();
 			System.out.println("New person enters the elevator " + ElevatorScene.enterElevator.availablePermits() + " available spots left");
+			if(ElevatorScene.enterElevator.availablePermits() == 0){
+				Thread.sleep(ElevatorScene.VISUALIZATION_WAIT_TIME);
+				ElevatorScene.scene.elevatorMove();	
+			}
 			
 		} catch (InterruptedException e) {
 			// TODO Auto-generated catch block
